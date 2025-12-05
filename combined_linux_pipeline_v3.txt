@@ -1,0 +1,49 @@
+########Iso-seq profiling of novel isoform variants in human retina at single cell resolution############
+########created by Luozixian Wang, Raymond Wong##########################################################
+########CERA, UNIMELB, 05/12/2024########################################################################
+
+##run ASprofile in Linux command line
+#figure 5A
+#ASprofile
+./ASprofile.b-1.0.4/extract-as RetinaMerge.sorted.filtered_lite.gff GRCh38.p14.genome.fa > AS_output.txt
+perl ~/ASprofile/ASprofile.b-1.0.4/summarize_as.pl RetinaMerge.sorted.filtered_lite.gff AS_output.txt -p Retina
+
+##run scisorSeqR in R
+R
+#load in libraries
+library(scisorseqr)
+STARalign('fqFolder','~/STAR-2.7.10b/source','~/STAR-2.7.10b', 10)
+
+MapAndFilter(annoGZ="~/R/GRCh38/annotation/gencode.v43.annotation.gtf.gz", numThreads=10, seqDir="/~/R/GRCh38/genome/chromFa/", filterFullLength=TRUE, cageBed="~/R/GRCh38/CAGE_peaks/hg38_fair+new_CAGE_peaks_phase1and2.bed.gz", polyABed="~/R/GRCh38/PolyA_sites/atlas.clusters.2.0.GRCh38.96.bed.gz", genomeVersion='hg38')
+
+GetBarcodes(fqFolder="~/R/isoseq/ccs/RetinaA/fqFolder/", BCClustAssignFile="~/R/isoseq/ccs/RetinaA/bc_celltype_assignments", filterReads=FALSE)
+
+InfoPerLongRead(barcodeOutputFile="~/R/isoseq/ccs/RetinaA/OutputFiltered/FilteredDeconvBC_AllFiles.csv", mapAndFilterOut="LRProcessingOutput/", minTimesIsoObserve=3, rmTmpFolder=FALSE)
+
+#remember to unzip AllInfo first
+IsoQuant(AllInfoFile = '/home/lwang/R/isoseq/ccs/RetinaA/LongReadInfo/AllInfo', Iso = TRUE, TSS = TRUE, PolyA = TRUE)
+ExonQuant(groupingFactor = "Celltype", threshold = 10)
+
+DiffSplicingAnalysis(configFile = '/home/lwang/R/isoseq/ccs/RetinaA/config', typeOfTest = 'Iso', minNumReads = 25, is.hier = FALSE)
+DiffSplicingAnalysis(configFile = '/home/lwang/R/isoseq/ccs/RetinaA/config', typeOfTest = 'Exon', minNumReads = 25, is.hier = FALSE)
+#figure 5B, C
+triHeatmap(treeDir = '/home/lwang/R/isoseq/ccs/RetinaB/TreeTraversal_Iso/',comparisonList = '/home/lwang/R/isoseq/ccs/RetinaB/condensedCellTypes', outName = 'condensedCellTypes')
+
+##run scisorWiz in R
+R
+#figure 5D， 5E
+library(ScisorWiz)
+
+ScisorWiz_AllInfo(gencodeAnno = "~/R/GRCh38/annotation/gencode.v44.annotation.gtf.gz", AllInfoInput = "AllInfo.gz", cellTypeFile = "~/R/isoseq/paper_figure/cellType_Retina.tab", gene = "ASPH", ci = .05, outputDir = "output_paper/")
+
+ScisorWiz_AllInfo(gencodeAnno = "~/R/GRCh38/annotation/gencode.v44.annotation.gtf.gz", AllInfoInput = "AllInfo.gz", cellTypeFile = "~/R/isoseq/paper_figure/cellType_Retina.tab", gene = "EXOC1", ci = .05, outputDir = "output_paper/")
+
+#interactive figure
+ScisorWiz_AllInfo(gencodeAnno = "~/R/GRCh38/annotation/gencode.v44.annotation.gtf.gz", AllInfoInput = "AllInfo.gz", cellTypeFile = "~/R/isoseq/paper_figure/cellType_Retina.tab", gene = "ASPH", ci = .05, outputDir = "output_paper_interactive/", interactive = "y")
+
+ScisorWiz_AllInfo(gencodeAnno = "~/R/GRCh38/annotation/gencode.v44.annotation.gtf.gz", AllInfoInput = "AllInfo.gz", cellTypeFile = "~/R/isoseq/paper_figure/cellType_Retina.tab", gene = "EXOC1", ci = .05, outputDir = "output_paper_interactive/", interactive = "y")
+
+
+####end of the session########################
+####author: Luozixian Wang, Raymond Wong######
+####05/12/2024################################
